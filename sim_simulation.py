@@ -6,11 +6,11 @@ class Simulation():
         self.core = core
     
     def run(self,steps):
-        for i in range(int(steps)):
-            self.core.newStatus(("Simulando paso <span foreground='yellow'>"+str(i+1)+"</span>"))
-            self.community.take_step()
+        if self.community.population_is_generated:
+            for i in range(int(steps)):
+                self.community.take_step()
+        else:
+            self.core.populationNoGenerated()
         
         self.community.show_population()
-
-    def get_log(self):
-        return self.community.get_log()
+        self.community.get_log()

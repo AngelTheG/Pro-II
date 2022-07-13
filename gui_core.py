@@ -10,6 +10,7 @@ from gi.repository import Gtk,Gdk
 from gui_numbify import NumberEntry
 from gui_config import ConfigWindow
 from sim_core import SimulatorCore
+from gui_about import About
 
 class Core(Gtk.Window):
     def __init__(self):
@@ -115,32 +116,36 @@ class Core(Gtk.Window):
         # Treeview - Lista de ciudadanos
         self.lss_citizens = Gtk.ListStore(int)   # Paso
 
-        trv_citizens = Gtk.TreeView(model = self.lss_citizens)
+        self.trv_citizens = Gtk.TreeView(model = self.lss_citizens)
+        self.trv_citizens.connect("cursor-changed",self.show_citizen_data)
+
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("Id", renderer, text=0)
-        trv_citizens.append_column(column)
+        self.trv_citizens.append_column(column)
 
         # Scrolled Window - Lista de ciudadanos
         scr_population = Gtk.ScrolledWindow()
         scr_population.set_vexpand(True)
         scr_population.set_hexpand(True)
 
-        scr_population.add(trv_citizens)
+        scr_population.add(self.trv_citizens)
 
         # Treeview - Lista de resultados por paso
         self.lss_results = Gtk.ListStore(int,   # Paso
                                          int,   # Casos Activos
                                          int,   # Casos Totales
                                          int,   # Muertos
-                                         int)   # Curados
+                                         int,   # Curados
+                                         str)   # Vacunados
 
         trv_results = Gtk.TreeView(model = self.lss_results)
 
         for i, column_title in enumerate(["Paso",
-                                          "Casos Activos",
-                                          "Casos Totales", 
+                                          "Activos",
+                                          "Totales", 
                                           "Muertos",
-                                          "Curados"]):
+                                          "Curados",
+                                          "Vacunados"]):
 
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
@@ -164,36 +169,40 @@ class Core(Gtk.Window):
         grd_citizen.set_row_spacing(5)
         grd_citizen.set_column_spacing(20)
 
-        lbl_citizen_title = Gtk.Label()
-        lbl_citizen_title.set_xalign(0)
-        lbl_citizen_title.set_markup("<b>Ciudadano</b>       --")
+        self.lbl_citizen_title = Gtk.Label()
+        self.lbl_citizen_title.set_xalign(0)
+        self.lbl_citizen_title.set_markup("<b>Ciudadano</b>       --")
 
-        lbl_citizen_status = Gtk.Label()
-        lbl_citizen_status.set_xalign(0)
-        lbl_citizen_status.set_markup("<span foreground='cyan'>Sano</span>")
+        self.lbl_citizen_status = Gtk.Label()
+        self.lbl_citizen_status.set_xalign(0)
+        self.lbl_citizen_status.set_markup("<span foreground='cyan'>Sano</span>")
 
-        lbl_citizen_age = Gtk.Label(label="Edad: --")
-        lbl_citizen_age.set_xalign(0)
+        self.lbl_citizen_age = Gtk.Label(label="Edad: --")
+        self.lbl_citizen_age.set_xalign(0)
 
-        lbl_citizen_family = Gtk.Label(label="Familiares: --")
-        lbl_citizen_family.set_xalign(0)
+        self.lbl_citizen_family = Gtk.Label(label="Familiares: --")
+        self.lbl_citizen_family.set_xalign(0)
 
-        lbl_citizen_condition_a = Gtk.Label(label="Enfermedad: --")
-        lbl_citizen_condition_a.set_xalign(0)
+        self.lbl_citizen_condition_a = Gtk.Label(label="Enfermedad: --")
+        self.lbl_citizen_condition_a.set_xalign(0)
 
-        lbl_citizen_condition_b = Gtk.Label(label="Afección: --")
-        lbl_citizen_condition_b.set_xalign(0)
+        self.lbl_citizen_condition_b = Gtk.Label(label="Afección: --")
+        self.lbl_citizen_condition_b.set_xalign(0)
 
-        lbl_citizen_date = Gtk.Label(label="--")
-        lbl_citizen_date.set_xalign(0)
+        self.lbl_citizen_date = Gtk.Label(label="--")
+        self.lbl_citizen_date.set_xalign(0)
 
-        grd_citizen.add(lbl_citizen_title)
-        grd_citizen.attach(lbl_citizen_status,1,0,1,1)
-        grd_citizen.attach(lbl_citizen_age,0,1,1,1)
-        grd_citizen.attach(lbl_citizen_family,1,1,1,1)
-        grd_citizen.attach(lbl_citizen_condition_a,0,2,1,1)
-        grd_citizen.attach(lbl_citizen_condition_b,1,2,1,1)
-        grd_citizen.attach(lbl_citizen_date,0,3,1,1)
+        self.lbl_citizen_personal_log = Gtk.Label(label="")
+        self.lbl_citizen_personal_log.set_xalign(0)
+
+        grd_citizen.add(self.lbl_citizen_title)
+        grd_citizen.attach(self.lbl_citizen_status,1,0,1,1)
+        grd_citizen.attach(self.lbl_citizen_age,0,1,1,1)
+        grd_citizen.attach(self.lbl_citizen_family,1,1,1,1)
+        grd_citizen.attach(self.lbl_citizen_condition_a,0,2,1,1)
+        grd_citizen.attach(self.lbl_citizen_condition_b,1,2,1,1)
+        grd_citizen.attach(self.lbl_citizen_date,0,3,1,1)
+        grd_citizen.attach(self.lbl_citizen_personal_log,0,4,2,1)
 
         # Contenedores
         grd_simulation = Gtk.Grid()
@@ -208,11 +217,11 @@ class Core(Gtk.Window):
 
         box_status = Gtk.Box(orientation=1,spacing=10)
         box_status.pack_start(self.lbl_status,False,False,0)
-        box_status.pack_end(box_steps,False,False,0)
+        box_status.pack_start(box_steps,False,False,0)
 
         box_info = Gtk.Box(spacing=150)
         box_info.pack_start(grd_citizen,False,False,10)
-        box_info.pack_start(box_status,False,False,10)
+        box_info.pack_end(box_status,False,False,10)
         #box_info.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.2,0.2,0.2,100))
         
         grd_main = Gtk.Grid()
@@ -266,6 +275,7 @@ class Core(Gtk.Window):
     # Comenzar con la simulación
     def start(self,widget):
         if self.ent_steps.get_text() != "":
+            self.started = True
             sim_core = SimulatorCore(self,int(self.ent_steps.get_text()))
 
         else:
@@ -288,7 +298,7 @@ class Core(Gtk.Window):
         dialog.format_secondary_text(("El archivo que trataste de cargar no es compatible"+
                                      "o está dañado, asegurate de que sea compatible visi"+
                                      "tando el repositorio del proyecto y comprobandolo e"+
-                                     "n la sección de \nCREANDO UN PRE-CONFIG"))
+                                     "n la sección de \n\nCREANDO UN PRE-CONFIG"))
         dialog.run()
         dialog.destroy()
 
@@ -336,6 +346,7 @@ class Core(Gtk.Window):
                     
                 self.updateSimulationParameters(file_data)
             else:
+                fileDialog.destroy()
                 self.isNotCompatible()
                 self.header.set_subtitle((file_name[-1]+" dañado o no es compatible"))
 
@@ -343,10 +354,49 @@ class Core(Gtk.Window):
         else:
             fileDialog.destroy()
 
+    # Error de la población
+    def populationNoGenerated(self):
+        dialog = Gtk.MessageDialog(transient_for=self, flags=0,
+                                   message_type=Gtk.MessageType.ERROR,
+                                   buttons=Gtk.ButtonsType.CANCEL,
+                                   text="Error en la generación de la comunidad",)
+
+        dialog.format_secondary_text(("Hubo un error al crear la comunidad, esto se debe a"+
+                                     "que en la creación de las familias existían familias "+
+                                     "a las que le faltan miembros aunque existan disponibles"+
+                                     "\n\n Intenta cambiar el minimo de los familiares a 1"))
+        dialog.run()
+        dialog.destroy()
+
     # Cargar los ciudadanos
     def load_citizen_data(self,citizen_data):
-        for i in citizen_data:
-            pass
+        self.lss_citizens.clear()
+        self.citizens = citizen_data
+
+        for citizen_id in self.citizens:
+            self.lss_citizens.append([citizen_id.get_id_number()])
+
+    # Mostrar datos del ciudadano
+    def show_citizen_data(self,widget):
+        if not self.started:
+            model, treeiter = widget.get_selection().get_selected()
+            if treeiter != None:
+                citizen_id = model[treeiter][0]
+                        
+            # Mostrar info del ciudadano correspondiente
+            self.lbl_citizen_title.set_markup("<b>Ciudadano</b> <b>   <big>"+str(self.citizens[citizen_id].get_id_number())+"</big></b>")
+            self.lbl_citizen_status.set_markup(str(self.citizens[citizen_id].get_info_status()))
+            self.lbl_citizen_age.set_markup("Edad "+str(self.citizens[citizen_id].get_age()))
+            self.lbl_citizen_family.set_markup(self.citizens[citizen_id].get_family_ids())
+            self.lbl_citizen_condition_a.set_markup(self.citizens[citizen_id].get_base_disease())
+            self.lbl_citizen_condition_b.set_markup(self.citizens[citizen_id].get_afection())
+            self.lbl_citizen_date.set_markup(self.citizens[citizen_id].get_infection_date())
+            self.lbl_citizen_personal_log.set_markup(self.citizens[citizen_id].get_personal_log())
+
+    def show_log(self,logs):
+        self.lss_results.clear()
+        for log in logs:
+            self.lss_results.append(log)
 
     # Abrir el dialogo de configuracion/creacion de simulacion
     def config(self,widget):
@@ -359,7 +409,7 @@ class Core(Gtk.Window):
 
     # Abrir el dialogo about
     def about(self,widget):
-        print("about")
+        About(self)
         
 # Ejecución core
 main = Core()

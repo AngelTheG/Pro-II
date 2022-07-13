@@ -51,7 +51,7 @@ class ConfigWindow(Gtk.Dialog):
         # Entrys
         """Comunidad"""
         self.ent_community_name = Gtk.Entry()
-        self.ent_community_population = NumberEntry()
+        self.ent_community_population = NumberEntry(minimum=4)
         self.ent_community_contact_prom = NumberEntry()
         self.ent_community_contact_prob = NumberEntry(limit=100)
         self.ent_community_family_min = NumberEntry()
